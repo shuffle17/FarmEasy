@@ -1,9 +1,10 @@
 package service
 
 import (
-	"FarmEasy/db"
 	"encoding/json"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 type MsgResponse struct {
@@ -14,7 +15,7 @@ type MsgResponse struct {
 func registerHandler(deps dependencies) http.HandlerFunc {
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		var farmer db.Farmer
+		var farmer NewFarmer
 		err := json.NewDecoder(req.Body).Decode(&farmer)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -30,14 +31,15 @@ func registerHandler(deps dependencies) http.HandlerFunc {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		farmer, err = deps.FarmService.Register(req.Context(), farmer)
+		logrus.Info(farmer.Password)
+		addedFarmer, err := deps.FarmService.Register(req.Context(), farmer)
 
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		respBytes, _ := json.Marshal(farmer)
+		respBytes, _ := json.Marshal(addedFarmer)
 		rw.Write(respBytes)
 		rw.WriteHeader(http.StatusCreated)
 	})

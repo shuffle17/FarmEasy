@@ -11,7 +11,7 @@ import (
 var secretKey = []byte("I'mGoingToBeAGolangDeveloper")
 
 type Service interface {
-	Register(ctx context.Context, farmer db.Farmer) (addedFarmer db.Farmer, err error)
+	Register(ctx context.Context, farmer NewFarmer) (addedFarmer db.Farmer, err error)
 	Login(ctx context.Context, fAuth LoginRequest) (token string, err error)
 }
 
@@ -25,9 +25,20 @@ func NewFarmService(s db.Storer) Service {
 	}
 }
 
-func (s *FarmService) Register(ctx context.Context, farmer db.Farmer) (addedFarmer db.Farmer, err error) {
-	farmer.Password = Hash_password(farmer.Password)
-	addedFarmer, err = s.store.RegisterFarmer(ctx, farmer)
+func (s *FarmService) Register(ctx context.Context, farmer NewFarmer) (addedFarmer db.Farmer, err error) {
+
+	newFarmer := db.Farmer{
+		FirstName: farmer.FirstName,
+		LastName:  farmer.LastName,
+		Email:     farmer.Email,
+		Phone:     farmer.Phone,
+		Address:   farmer.Address,
+		Password:  farmer.Password,
+	}
+
+	newFarmer.Password = Hash_password(newFarmer.Password)
+
+	addedFarmer, err = s.store.RegisterFarmer(ctx, newFarmer)
 	return
 }
 func generateJWT(farmerId uint) (token string, err error) {

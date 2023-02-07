@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"regexp"
+
+	"github.com/sirupsen/logrus"
 )
 
 func ValidateFarmerPhone(phone string) (err error) {
@@ -28,6 +30,6 @@ func Hash_password(password string) (hash string) {
 	hsha := sha256.New()
 	hsha.Write([]byte(password))
 	hash = base64.URLEncoding.EncodeToString(hsha.Sum(nil))
-
+	logrus.Info(password, " -> ", hash)
 	return
 }
