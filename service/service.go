@@ -6,7 +6,7 @@ import (
 )
 
 type Service interface {
-	Register(ctx context.Context, farmer db.Farmer) (err error)
+	Register(ctx context.Context, farmer db.Farmer) (addedFarmer db.Farmer, err error)
 }
 
 type FarmService struct {
@@ -19,8 +19,8 @@ func NewFarmService(s db.Storer) Service {
 	}
 }
 
-func (s *FarmService) Register(ctx context.Context, farmer db.Farmer) (err error) {
+func (s *FarmService) Register(ctx context.Context, farmer db.Farmer) (addedFarmer db.Farmer, err error) {
 	farmer.Password = Hash_password(farmer.Password)
-	err = s.store.RegisterFarmer(ctx, farmer)
+	addedFarmer, err = s.store.RegisterFarmer(ctx, farmer)
 	return
 }

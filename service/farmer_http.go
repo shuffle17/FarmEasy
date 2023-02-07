@@ -29,14 +29,14 @@ func registerHandler(deps dependencies) http.HandlerFunc {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = deps.FarmService.Register(req.Context(), farmer)
+		farmer, err = deps.FarmService.Register(req.Context(), farmer)
 
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		response := PingResponse{Message: "Farmer added successfully"}
-		respBytes, _ := json.Marshal(response)
+		// response := PingResponse{Message: "Farmer added successfully"}
+		respBytes, _ := json.Marshal(farmer)
 		rw.Write(respBytes)
 		rw.WriteHeader(http.StatusCreated)
 	})
