@@ -65,14 +65,11 @@ func main() {
 }
 
 func startApp() (err error) {
-	store, err := db.Init()
+
+	deps, err := service.InitDependencies()
 	if err != nil {
 		logger.WithField("err", err.Error()).Error("Database init failed")
 		return
-	}
-
-	deps := service.Dependencies{
-		Store: store,
 	}
 
 	// mux router

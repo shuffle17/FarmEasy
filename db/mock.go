@@ -10,7 +10,7 @@ type DBMockStore struct {
 	mock.Mock
 }
 
-func (m *DBMockStore) ListUsers(ctx context.Context) (users []User, err error) {
-	args := m.Called(ctx)
-	return args.Get(0).([]User), args.Error(1)
+func (m *DBMockStore) RegisterFarmer(ctx context.Context, farmer Farmer) (err error) {
+	args := m.Called(ctx, farmer)
+	return args.Error(0)
 }

@@ -1,8 +1,23 @@
 package service
 
-import "FarmEasy/db"
+import (
+	"FarmEasy/db"
+)
 
-type Dependencies struct {
-	Store db.Storer
+type dependencies struct {
+	FarmService Service
 	// define other service dependencies
+}
+
+func InitDependencies() (deps dependencies, err error) {
+	store, err := db.Init()
+	if err != nil {
+		return
+	}
+	farmService := NewFarmService(store)
+
+	deps = dependencies{
+		FarmService: farmService,
+	}
+	return deps, nil
 }

@@ -1,28 +1,18 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
-
-	"FarmEasy/config"
 
 	"github.com/gorilla/mux"
 )
 
-const (
-	versionHeader = "Accept"
-)
-
 /* The routing mechanism. Mux helps us define handler functions and the access methods */
-func InitRouter(deps Dependencies) (router *mux.Router) {
+func InitRouter(deps dependencies) (router *mux.Router) {
 	router = mux.NewRouter()
 
-	// No version requirement for /ping
 	router.HandleFunc("/ping", pingHandler).Methods(http.MethodGet)
 
-	// Version 1 API management
-	v1 := fmt.Sprintf("application/vnd.%s.v1", config.AppName())
+	router.HandleFunc("/register", registerHandler(deps)).Methods(http.MethodPost)
 
-	router.HandleFunc("/users", listUsersHandler(deps)).Methods(http.MethodGet).Headers(versionHeader, v1)
 	return
 }
