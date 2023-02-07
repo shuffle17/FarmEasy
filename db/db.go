@@ -11,4 +11,5 @@ type Storer interface {
 	//Delete(context.Context, string) error
 	RegisterFarmer(context.Context, Farmer) (addedFarmer Farmer, err error)
 	LoginFarmer(context.Context, string, string) (farmerId uint, err error)
+	AddMachine(context.Context, Machine) (addedMachine Machine, err error)
 }

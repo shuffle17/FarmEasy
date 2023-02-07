@@ -13,3 +13,10 @@ type NewFarmer struct {
 	Address   string `db:"address" json:"address"`
 	Password  string `db:"password" json:"password"`
 }
+
+type NewMachine struct {
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	BaseHourlyCharge uint   `json:"base_hourly_charge"`
+	OwnerId          uint   `json:"owner_id"`
+}

@@ -15,5 +15,7 @@ func InitRouter(deps dependencies) (router *mux.Router) {
 	router.HandleFunc("/register", registerHandler(deps)).Methods(http.MethodPost)
 
 	router.HandleFunc("/login", loginHandler(deps)).Methods(http.MethodPost)
+
+	router.HandleFunc("/machines", addMachineHandler(deps)).Methods(http.MethodPost)
 	return
 }

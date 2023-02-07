@@ -72,3 +72,35 @@ func loginHandler(deps dependencies) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+func addMachineHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authentication")
+		if tokenString == "" {
+			http.Error(w, "No token provided", http.StatusBadRequest)
+			return
+		}
+		var machine NewMachine
+
+		if err := json.NewDecoder(r.Body).Decode(&machine); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		var err error
+		machine.OwnerId, err = ValidateJWT(tokenString)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		addedMachine, err := deps.FarmService.AddMachine(r.Context(), machine)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		respBytes, _ := json.Marshal(addedMachine)
+		w.Write(respBytes)
+		w.WriteHeader(http.StatusCreated)
+	}
+}
