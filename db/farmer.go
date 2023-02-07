@@ -22,12 +22,19 @@ func (s *pgStore) RegisterFarmer(ctx context.Context, farmer Farmer) (addedFarme
 		logger.WithField("err", err.Error()).Error("Error inserting farmer")
 		return
 	}
-	// id, err := res.LastInsertId()
+
+	addedFarmer = farmer
+
+	return
+}
+
+func (s *pgStore) LoginFarmer(ctx context.Context, email string, password string) (farmerId uint, err error) {
+
+	err = s.db.QueryRowContext(ctx, "SELECT id FROM farmers WHERE email = $1 and password = $2", email, password).Scan(&farmerId)
 	if err != nil {
-		logger.WithField("err", err.Error()).Error("Error inserting farmer")
+		logger.WithField("err", err.Error()).Error("Error incorrect email or password")
 		return
 	}
-	addedFarmer = farmer
 
 	return
 }

@@ -1,24 +1,23 @@
 package service
 
 import (
-	"FarmEasy/db"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"regexp"
 )
 
-func ValidateFarmerPhone(farmer db.Farmer) (err error) {
+func ValidateFarmerPhone(phone string) (err error) {
 	re := regexp.MustCompile(`^[0-9]{10}$`)
-	if !re.MatchString(farmer.Phone) {
+	if !re.MatchString(phone) {
 		err = errors.New("invalid phone number")
 	}
 	return
 }
 
-func ValidateFarmerEmail(farmer db.Farmer) (err error) {
+func ValidateFarmerEmail(email string) (err error) {
 	re := regexp.MustCompile(`^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$`)
-	if !re.MatchString(farmer.Email) {
+	if !re.MatchString(email) {
 		err = errors.New("invalid email")
 	}
 	return

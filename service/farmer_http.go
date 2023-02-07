@@ -8,6 +8,7 @@ import (
 
 type MsgResponse struct {
 	Message string `json:"message"`
+	Token   string `json:"token"`
 }
 
 func registerHandler(deps dependencies) http.HandlerFunc {
@@ -20,11 +21,11 @@ func registerHandler(deps dependencies) http.HandlerFunc {
 			return
 		}
 
-		if err = ValidateFarmerPhone(farmer); err != nil {
+		if err = ValidateFarmerPhone(farmer.Phone); err != nil {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err = ValidateFarmerEmail(farmer); err != nil {
+		if err = ValidateFarmerEmail(farmer.Email); err != nil {
 
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
@@ -35,9 +36,37 @@ func registerHandler(deps dependencies) http.HandlerFunc {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// response := PingResponse{Message: "Farmer added successfully"}
+
 		respBytes, _ := json.Marshal(farmer)
 		rw.Write(respBytes)
 		rw.WriteHeader(http.StatusCreated)
 	})
+}
+
+func loginHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var fAuth LoginRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&fAuth); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := ValidateFarmerEmail(fAuth.Email); err != nil {
+
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		tokenString, err := deps.FarmService.Login(r.Context(), fAuth)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		msg := MsgResponse{Message: "Login Successful", Token: tokenString}
+		respBytes, _ := json.Marshal(msg)
+		w.Write(respBytes)
+		w.WriteHeader(http.StatusOK)
+	}
 }
