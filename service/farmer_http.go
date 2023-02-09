@@ -89,7 +89,7 @@ func addMachineHandler(deps dependencies) http.HandlerFunc {
 		var err error
 		machine.OwnerId, err = ValidateJWT(tokenString)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "Invalid token provided", http.StatusBadRequest)
 			return
 		}
 		addedMachine, err := deps.FarmService.AddMachine(r.Context(), machine)
@@ -100,6 +100,72 @@ func addMachineHandler(deps dependencies) http.HandlerFunc {
 		}
 
 		respBytes, _ := json.Marshal(addedMachine)
+		w.Write(respBytes)
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+func getMachineHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authentication")
+		if tokenString == "" {
+			http.Error(w, "No token provided", http.StatusBadRequest)
+			return
+		}
+		_, err := ValidateJWT(tokenString)
+		if err != nil {
+			http.Error(w, "Invalid token provided", http.StatusBadRequest)
+			return
+		}
+		machines, err := deps.FarmService.GetMachines(r.Context())
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		respBytes, _ := json.Marshal(machines)
+		w.Write(respBytes)
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func bookingHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// tokenString := r.Header.Get("Authentication")
+		// if tokenString == "" {
+		// 	http.Error(w, "No token provided", http.StatusBadRequest)
+		// 	return
+		// }
+		// _, err := ValidateJWT(tokenString)
+		// if err != nil {
+		// 	http.Error(w, "Invalid token provided", http.StatusBadRequest)
+		// 	return
+		// }
+		var booking NewBooking
+
+		if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := ValidateBookingslots(booking.Slots); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := ValidateBookingDate(booking.Date); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		addedBooking, err := deps.FarmService.BookMachine(r.Context(), booking)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		respBytes, _ := json.Marshal(addedBooking)
 		w.Write(respBytes)
 		w.WriteHeader(http.StatusCreated)
 	}

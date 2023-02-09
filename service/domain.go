@@ -20,3 +20,10 @@ type NewMachine struct {
 	BaseHourlyCharge uint   `json:"base_hourly_charge"`
 	OwnerId          uint   `json:"owner_id"`
 }
+
+type NewBooking struct {
+	MachineId uint   `json:"machine_id"`
+	Date      string `json:"date"`
+	Slots     []uint `json:"slots"`
+	FarmerId  uint   `json:"farmer_id"`
+}

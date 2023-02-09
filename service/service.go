@@ -3,6 +3,7 @@ package service
 import (
 	"FarmEasy/db"
 	"context"
+	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -14,6 +15,8 @@ type Service interface {
 	Register(ctx context.Context, farmer NewFarmer) (addedFarmer db.Farmer, err error)
 	Login(ctx context.Context, fAuth LoginRequest) (token string, err error)
 	AddMachine(ctx context.Context, machine NewMachine) (addedMachine db.Machine, err error)
+	GetMachines(ctx context.Context) (machines []db.Machine, err error)
+	BookMachine(ctx context.Context, booking NewBooking) (db.Invoice, error)
 }
 
 type FarmService struct {
@@ -91,5 +94,57 @@ func (s *FarmService) AddMachine(ctx context.Context, machine NewMachine) (added
 		OwnerId:          machine.OwnerId,
 	}
 	addedMachine, err = s.store.AddMachine(ctx, newMachine)
+	return
+}
+
+func (s *FarmService) GetMachines(ctx context.Context) (machines []db.Machine, err error) {
+	machines, err = s.store.GetMachines(ctx)
+	return
+}
+
+func (s *FarmService) BookMachine(ctx context.Context, booking NewBooking) (invoice db.Invoice, err error) {
+
+	for _, slot := range booking.Slots {
+		empty := s.store.IsEmptySlot(ctx, booking.MachineId, slot, booking.Date)
+		if !empty {
+
+			err = errors.New("slot not empty")
+			return
+		}
+	}
+
+	newBooking := db.Booking{
+		MachineId: booking.MachineId,
+		FarmerId:  booking.FarmerId,
+	}
+	newBooking.Id, err = s.store.AddBooking(ctx, newBooking)
+	if err != nil {
+		return
+	}
+	for _, slot := range booking.Slots {
+		newSlot := db.Slot{
+			BookingId: newBooking.Id,
+			SlotId:    slot,
+			Date:      booking.Date,
+		}
+		err = s.store.BookSlot(ctx, newSlot)
+		if err != nil {
+			return
+		}
+	}
+	baseCharge, err := s.store.GetBaseCharge(ctx, booking.MachineId)
+	if err != nil {
+		return
+	}
+	totalAmount := uint(len(booking.Slots)) * baseCharge
+	newInvoice := db.Invoice{
+		BookingId:    newBooking.Id,
+		DateGenrated: time.Now().Format("2006-01-02"),
+		Amount:       totalAmount,
+	}
+	newInvoice.Id, err = s.store.GenrateInvoice(ctx, newInvoice)
+
+	invoice = newInvoice
+
 	return
 }

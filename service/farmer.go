@@ -33,3 +33,23 @@ func Hash_password(password string) (hash string) {
 	logrus.Info(password, " -> ", hash)
 	return
 }
+
+func ValidateBookingslots(slots []uint) (err error) {
+	if len(slots) == 0 {
+		err = errors.New("no slots selected")
+	}
+	for _, v := range slots {
+		if v > 24 || v < 1 {
+			err = errors.New("invalid slot selected")
+		}
+	}
+	return
+}
+
+func ValidateBookingDate(date string) (err error) {
+	re := regexp.MustCompile(`^([0-9]{4})-([0-9]{2})-([0-9]{2})$`)
+	if !re.MatchString(date) {
+		err = errors.New("invalid date")
+	}
+	return
+}
