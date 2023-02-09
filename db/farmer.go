@@ -164,3 +164,27 @@ func (s *pgStore) GenrateInvoice(ctx context.Context, newInvoice Invoice) (invoi
 	return
 
 }
+
+func (s *pgStore) GetBookedSlot(ctx context.Context, machineId uint) (map[uint]struct{}, error) {
+
+	rows, err := s.db.QueryContext(ctx, "select s.slot_id from slots_booked s , bookings b where s.booking_id = b.id and b.machine_id = $1", machineId)
+	if err != nil {
+		logger.WithField("err", err.Error()).Error("error getting booked slots")
+		return nil, err
+	}
+
+	bookedSlots := map[uint]struct{}{}
+	for rows.Next() {
+		var id uint
+
+		var err = rows.Scan(&id)
+		if err != nil {
+			logger.WithField("err", err.Error()).Error("Error scanning slots")
+			return nil, err
+		}
+
+		bookedSlots[id] = struct{}{}
+	}
+
+	return bookedSlots, nil
+}

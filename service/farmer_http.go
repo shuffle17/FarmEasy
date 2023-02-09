@@ -3,7 +3,9 @@ package service
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -166,6 +168,26 @@ func bookingHandler(deps dependencies) http.HandlerFunc {
 		}
 
 		respBytes, _ := json.Marshal(addedBooking)
+		w.Write(respBytes)
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+func availabilityHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		machineId := vars["id"]
+		id, err := strconv.Atoi(machineId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		slotsAvailable, err := deps.FarmService.GetAvailability(r.Context(), uint(id))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		respBytes, _ := json.Marshal(slotsAvailable)
 		w.Write(respBytes)
 		w.WriteHeader(http.StatusCreated)
 	}

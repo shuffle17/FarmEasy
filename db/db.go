@@ -18,4 +18,5 @@ type Storer interface {
 	BookSlot(context.Context, Slot) (err error)
 	GetBaseCharge(context.Context, uint) (baseCharge uint, err error)
 	GenrateInvoice(context.Context, Invoice) (invoiceId uint, err error)
+	GetBookedSlot(context.Context, uint) (map[uint]struct{}, error)
 }

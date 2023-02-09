@@ -17,6 +17,7 @@ type Service interface {
 	AddMachine(ctx context.Context, machine NewMachine) (addedMachine db.Machine, err error)
 	GetMachines(ctx context.Context) (machines []db.Machine, err error)
 	BookMachine(ctx context.Context, booking NewBooking) (db.Invoice, error)
+	GetAvailability(context.Context, uint) (slotsAvailable []uint, err error)
 }
 
 type FarmService struct {
@@ -146,5 +147,20 @@ func (s *FarmService) BookMachine(ctx context.Context, booking NewBooking) (invo
 
 	invoice = newInvoice
 
+	return
+}
+
+func (s *FarmService) GetAvailability(ctx context.Context, machineId uint) (slotsAvailable []uint, err error) {
+
+	bookedSlots, err := s.store.GetBookedSlot(ctx, machineId)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 1; i <= 24; i++ {
+		if _, ok := bookedSlots[uint(i)]; !ok {
+			slotsAvailable = append(slotsAvailable, uint(i))
+		}
+	}
 	return
 }
