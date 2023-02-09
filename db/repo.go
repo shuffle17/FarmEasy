@@ -7,6 +7,24 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
+type Storer interface {
+
+	//Create(context.Context, User) error
+	//GetUser(context.Context) (User, error)
+	//Delete(context.Context, string) error
+	RegisterFarmer(context.Context, Farmer) (addedFarmer Farmer, err error)
+	LoginFarmer(context.Context, string, string) (farmerId uint, err error)
+	AddMachine(context.Context, Machine) (addedMachine Machine, err error)
+	GetMachines(context.Context) (machines []Machine, err error)
+	IsEmptySlot(context.Context, uint, uint, string) (isEmpty bool)
+	AddBooking(context.Context, Booking) (bookingId uint, err error)
+	BookSlot(context.Context, Slot) (err error)
+	GetBaseCharge(context.Context, uint) (baseCharge uint, err error)
+	GenrateInvoice(context.Context, Invoice) (invoiceId uint, err error)
+	GetBookedSlot(context.Context, uint) (map[uint]struct{}, error)
+	GetAllBookings(context.Context, uint) (bookings []Booking, err error)
+}
+
 type Farmer struct {
 	Id        uint   `db:"id" json:"id"`
 	FirstName string `db:"fname" json:"fname"`
@@ -187,4 +205,26 @@ func (s *pgStore) GetBookedSlot(ctx context.Context, machineId uint) (map[uint]s
 	}
 
 	return bookedSlots, nil
+}
+
+func (s *pgStore) GetAllBookings(ctx context.Context, farmerId uint) (bookings []Booking, err error) {
+
+	rows, err := s.db.QueryContext(ctx, "SELECT * FROM bookings WHERE farmer_id = $1", farmerId)
+	if err != nil {
+		logger.WithField("err", err.Error()).Error("Error getting bookings")
+		return
+	}
+
+	for rows.Next() {
+		var booking Booking
+		err = rows.Scan(&booking.Id, &booking.FarmerId, &booking.MachineId)
+		if err != nil {
+			logger.WithField("err", err.Error()).Error("Error scanning bookings")
+			return
+		}
+
+		bookings = append(bookings, booking)
+	}
+
+	return
 }

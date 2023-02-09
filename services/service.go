@@ -1,23 +1,27 @@
-package service
+package services
 
 import (
 	"FarmEasy/db"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
 )
 
 var secretKey = []byte("I'mGoingToBeAGolangDeveloper")
 
 type Service interface {
-	Register(ctx context.Context, farmer NewFarmer) (addedFarmer db.Farmer, err error)
-	Login(ctx context.Context, fAuth LoginRequest) (token string, err error)
-	AddMachine(ctx context.Context, machine NewMachine) (addedMachine db.Machine, err error)
-	GetMachines(ctx context.Context) (machines []db.Machine, err error)
-	BookMachine(ctx context.Context, booking NewBooking) (db.Invoice, error)
+	Register(context.Context, NewFarmer) (addedFarmer db.Farmer, err error)
+	Login(context.Context, NewLogin) (token string, err error)
+	AddMachine(context.Context, NewMachine) (addedMachine db.Machine, err error)
+	GetMachines(context.Context) (machines []db.Machine, err error)
+	BookMachine(context.Context, NewBooking) (db.Invoice, error)
 	GetAvailability(context.Context, uint) (slotsAvailable []uint, err error)
+	GetAllBookings(context.Context, uint) (bookings []db.Booking, err error)
 }
 
 type FarmService struct {
@@ -56,25 +60,16 @@ func generateJWT(farmerId uint) (token string, err error) {
 	return
 }
 
-func ValidateJWT(tokenString string) (farmerId uint, err error) {
-	tokenObject, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, err
-		}
-		return secretKey, nil
-	})
-	if err != nil {
-		return
-	}
-	claims, ok := tokenObject.Claims.(jwt.MapClaims)
-	if !ok {
-		return
-	}
-	farmerId = uint(claims["user_id"].(float64))
+func Hash_password(password string) (hash string) {
+
+	hsha := sha256.New()
+	hsha.Write([]byte(password))
+	hash = base64.URLEncoding.EncodeToString(hsha.Sum(nil))
+	logrus.Info(password, " -> ", hash)
 	return
 }
 
-func (s *FarmService) Login(ctx context.Context, fAuth LoginRequest) (token string, err error) {
+func (s *FarmService) Login(ctx context.Context, fAuth NewLogin) (token string, err error) {
 	var farmerId uint
 	fAuth.Password = Hash_password(fAuth.Password)
 	farmerId, err = s.store.LoginFarmer(ctx, fAuth.Email, fAuth.Password)
@@ -162,5 +157,10 @@ func (s *FarmService) GetAvailability(ctx context.Context, machineId uint) (slot
 			slotsAvailable = append(slotsAvailable, uint(i))
 		}
 	}
+	return
+}
+
+func (s *FarmService) GetAllBookings(ctx context.Context, farmerId uint) (bookings []db.Booking, err error) {
+	bookings, err = s.store.GetAllBookings(ctx, farmerId)
 	return
 }

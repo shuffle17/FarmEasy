@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"FarmEasy/db"
@@ -6,7 +6,6 @@ import (
 
 type dependencies struct {
 	FarmService Service
-	// define other service dependencies
 }
 
 func InitDependencies() (deps dependencies, err error) {

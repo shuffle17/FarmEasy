@@ -1,12 +1,12 @@
-package service
+package services
 
 import (
+	"FarmEasy/api"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 type MsgResponse struct {
@@ -20,156 +20,129 @@ func registerHandler(deps dependencies) http.HandlerFunc {
 		var farmer NewFarmer
 		err := json.NewDecoder(req.Body).Decode(&farmer)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			api.Response(rw, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		if err = ValidateFarmerPhone(farmer.Phone); err != nil {
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			api.Response(rw, http.StatusBadRequest, err.Error())
+
 			return
 		}
 		if err = ValidateFarmerEmail(farmer.Email); err != nil {
 
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			api.Response(rw, http.StatusBadRequest, err.Error())
+
 			return
 		}
-		logrus.Info(farmer.Password)
+
 		addedFarmer, err := deps.FarmService.Register(req.Context(), farmer)
 
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			api.Response(rw, http.StatusBadRequest, err.Error())
+
 			return
 		}
+		api.Response(rw, http.StatusCreated, addedFarmer)
 
-		respBytes, _ := json.Marshal(addedFarmer)
-		rw.Write(respBytes)
-		rw.WriteHeader(http.StatusCreated)
 	})
 }
 
 func loginHandler(deps dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var fAuth LoginRequest
+		var fAuth NewLogin
 
 		if err := json.NewDecoder(r.Body).Decode(&fAuth); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		if err := ValidateFarmerEmail(fAuth.Email); err != nil {
+			api.Response(w, http.StatusBadRequest, err.Error())
 
-			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		tokenString, err := deps.FarmService.Login(r.Context(), fAuth)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
+
 			return
 		}
 
 		msg := MsgResponse{Message: "Login Successful", Token: tokenString}
-		respBytes, _ := json.Marshal(msg)
-		w.Write(respBytes)
-		w.WriteHeader(http.StatusOK)
+
+		api.Response(w, http.StatusOK, msg)
+
 	}
 }
 
 func addMachineHandler(deps dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("Authentication")
-		if tokenString == "" {
-			http.Error(w, "No token provided", http.StatusBadRequest)
-			return
-		}
 		var machine NewMachine
+		farmerId := r.Context().Value("token")
 
+		machine.OwnerId = farmerId.(uint)
 		if err := json.NewDecoder(r.Body).Decode(&machine); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		var err error
-		machine.OwnerId, err = ValidateJWT(tokenString)
-		if err != nil {
-			http.Error(w, "Invalid token provided", http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		addedMachine, err := deps.FarmService.AddMachine(r.Context(), machine)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
+
 			return
 		}
 
-		respBytes, _ := json.Marshal(addedMachine)
-		w.Write(respBytes)
-		w.WriteHeader(http.StatusCreated)
+		api.Response(w, http.StatusOK, addedMachine)
 	}
 }
 
 func getMachineHandler(deps dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("Authentication")
-		if tokenString == "" {
-			http.Error(w, "No token provided", http.StatusBadRequest)
-			return
-		}
-		_, err := ValidateJWT(tokenString)
-		if err != nil {
-			http.Error(w, "Invalid token provided", http.StatusBadRequest)
-			return
-		}
+
 		machines, err := deps.FarmService.GetMachines(r.Context())
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		respBytes, _ := json.Marshal(machines)
-		w.Write(respBytes)
-		w.WriteHeader(http.StatusOK)
+		api.Response(w, http.StatusOK, machines)
+
 	}
 }
 
 func bookingHandler(deps dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// tokenString := r.Header.Get("Authentication")
-		// if tokenString == "" {
-		// 	http.Error(w, "No token provided", http.StatusBadRequest)
-		// 	return
-		// }
-		// _, err := ValidateJWT(tokenString)
-		// if err != nil {
-		// 	http.Error(w, "Invalid token provided", http.StatusBadRequest)
-		// 	return
-		// }
-		var booking NewBooking
 
+		var booking NewBooking
+		id := r.Context().Value("token")
+		farmerId := id.(uint)
+		booking.FarmerId = farmerId
 		if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		if err := ValidateBookingslots(booking.Slots); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
+
 			return
 		}
 		if err := ValidateBookingDate(booking.Date); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		addedBooking, err := deps.FarmService.BookMachine(r.Context(), booking)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
-
-		respBytes, _ := json.Marshal(addedBooking)
-		w.Write(respBytes)
-		w.WriteHeader(http.StatusCreated)
+		api.Response(w, http.StatusCreated, addedBooking)
 	}
 }
 
@@ -179,16 +152,27 @@ func availabilityHandler(deps dependencies) http.HandlerFunc {
 		machineId := vars["id"]
 		id, err := strconv.Atoi(machineId)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		slotsAvailable, err := deps.FarmService.GetAvailability(r.Context(), uint(id))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Response(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		respBytes, _ := json.Marshal(slotsAvailable)
-		w.Write(respBytes)
-		w.WriteHeader(http.StatusCreated)
+		api.Response(w, http.StatusOK, slotsAvailable)
+	}
+}
+
+func getAllBookingsHandler(deps dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.Context().Value("token")
+		farmerId := id.(uint)
+		bookings, err := deps.FarmService.GetAllBookings(r.Context(), uint(farmerId))
+		if err != nil {
+			api.Response(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		api.Response(w, http.StatusOK, bookings)
 	}
 }

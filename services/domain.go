@@ -1,9 +1,10 @@
-package service
+package services
 
-type LoginRequest struct {
+type NewLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
 type NewFarmer struct {
 	Id        uint   `db:"id" json:"id"`
 	FirstName string `db:"fname" json:"fname"`
